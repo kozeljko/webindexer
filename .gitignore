@@ -31,3 +31,5 @@ HELP.md
 .idea/*
 
 /data
+
+/indexer/target/
