@@ -7,7 +7,7 @@ public class Posting {
 
     @EmbeddedId
     private PostingKey postingKey;
-    private Long frequency;
+    private Integer frequency;
     private String indexes;
 
     public Posting() {
@@ -39,11 +39,11 @@ public class Posting {
     }
 
     @Column(name = "frequency")
-    public Long getFrequency() {
+    public Integer getFrequency() {
         return frequency;
     }
 
-    public void setFrequency(Long frequency) {
+    public void setFrequency(Integer frequency) {
         this.frequency = frequency;
     }
 
