@@ -2,6 +2,7 @@ package si.kozelj.indexer.services;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.io.Resources;
@@ -42,8 +43,8 @@ public class FileImporter {
     public void importFiles() {
         List<Path> filePaths;
         Set<String> stopWords;
-        try (Stream<Path> paths = Files.walk(Paths.get(DATA_PATH))) {
-            filePaths = StreamEx.of(paths).filter(pathMatcher::matches).toList();
+        try {
+            filePaths = getFilePaths();
             stopWords = getStopWords();
         } catch (IOException e) {
             logger.error("Error while trying to fetch and filter file paths", e);
@@ -58,12 +59,37 @@ public class FileImporter {
         }
     }
 
+    public Map<String, String> getContent(Collection<String> documentNames) throws IOException {
+        List<Path> filePaths = getFilePaths();
+        Map<String, String> map = Maps.newHashMap();
+
+        for (Path path : filePaths) {
+            int nameCount = path.getNameCount();
+            String pathName = path.getName(nameCount - 2) + "/" + path.getName(nameCount - 1);
+
+            if (documentNames.contains(pathName)) {
+                map.put(pathName, extractDocumentText(path));
+            }
+        }
+
+        return map;
+    }
+
+    private String extractDocumentText(Path filePath) throws IOException {
+        String content = new String(Files.readAllBytes(filePath), Charset.forName("UTF-8"));
+        return Jsoup.parse(content).text();
+    }
+
+    private List<Path> getFilePaths() throws IOException {
+        Stream<Path> paths = Files.walk(Paths.get(DATA_PATH));
+        return StreamEx.of(paths).filter(pathMatcher::matches).toList();
+    }
+
     private void parsePath(Path path, Set<String> stopWords) {
         // retrieve document text
         String documentText;
         try {
-            String content = new String(Files.readAllBytes(path), Charset.forName("UTF-8"));
-            documentText = Jsoup.parse(content).text();
+            documentText = extractDocumentText(path);
             System.out.println(documentText);
         } catch (IOException e) {
             logger.error("Error while trying to load path content", e);
