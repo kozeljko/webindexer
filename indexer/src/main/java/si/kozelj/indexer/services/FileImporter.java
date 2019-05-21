@@ -64,8 +64,7 @@ public class FileImporter {
         Map<String, String> map = Maps.newHashMap();
 
         for (Path path : filePaths) {
-            int nameCount = path.getNameCount();
-            String pathName = path.getName(nameCount - 2) + "/" + path.getName(nameCount - 1);
+            String pathName = getDocumentName(path);
 
             if (documentNames.contains(pathName)) {
                 map.put(pathName, extractDocumentText(path));
@@ -75,12 +74,12 @@ public class FileImporter {
         return map;
     }
 
-    private String extractDocumentText(Path filePath) throws IOException {
+    public String extractDocumentText(Path filePath) throws IOException {
         String content = new String(Files.readAllBytes(filePath), Charset.forName("UTF-8"));
         return Jsoup.parse(content).text();
     }
 
-    private List<Path> getFilePaths() throws IOException {
+    public List<Path> getFilePaths() throws IOException {
         Stream<Path> paths = Files.walk(Paths.get(DATA_PATH));
         return StreamEx.of(paths).filter(pathMatcher::matches).toList();
     }
@@ -102,20 +101,19 @@ public class FileImporter {
         for (int i = 0; i < tokens.length; i++) {
             String token = tokens[i];
 
+            // normalize
+            token = token.toLowerCase();
+
             // check if stopword
             if (stopWords.contains(token)) {
                 continue;
             }
 
-            // normalize
-            token = token.toLowerCase();
-
             multiMap.put(token, i);
         }
 
         // create document name
-        int nameCount = path.getNameCount();
-        String documentName = path.getName(nameCount - 2) + "/" + path.getName(nameCount - 1);
+        String documentName = getDocumentName(path);
 
         // save new index words
         Collection<String> existingWords = StreamEx.of(indexWordRepository.findAllById(multiMap.keySet())).map(IndexWord::getWord).toList();
@@ -147,6 +145,11 @@ public class FileImporter {
 
         postingRepository.saveAll(newPostings);
         postingRepository.flush();
+    }
+
+    public String getDocumentName(Path path) {
+        int nameCount = path.getNameCount();
+        return path.getName(nameCount - 2) + "/" + path.getName(nameCount - 1);
     }
 
     // loads the stop words from the resources folder

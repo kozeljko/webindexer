@@ -39,9 +39,26 @@ public class IndexerRestController {
             e.printStackTrace();
             return "";
         }
-        long time = System.currentTimeMillis() - startMs;
 
-        String outputFormat = "Results for a query: \"" + searchRequest.getQuery() + "\"\n\n\tResults found in " + time + "ms\n\n";
+        return formatResults(searchRequest.getQuery(), queryResults, System.currentTimeMillis() - startMs);
+    }
+
+    @PostMapping("/search-slowly")
+    public String searchSlowly(@RequestBody SearchRequest searchRequest) {
+        long startMs = System.currentTimeMillis();
+        List<ResultWrapper> queryResults;
+        try {
+            queryResults = searchEngine.getQueryResultsSlowly(searchRequest.getQuery());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "";
+        }
+
+        return formatResults(searchRequest.getQuery(), queryResults, System.currentTimeMillis() - startMs);
+    }
+
+    private String formatResults(String query, List<ResultWrapper> queryResults, long time) {
+        String outputFormat = "Results for a query: \"" + query + "\"\n\n\tResults found in " + time + "ms\n\n";
         outputFormat += String.format("\t%-12s%-42s%-95s\n", "Frequencies", "Document", "Snippet");
         outputFormat += String.format("\t%-12s%-42s%-95s\n", "----------- ", "----------------------------------------- ", "-----------------------------------------------------------");
 

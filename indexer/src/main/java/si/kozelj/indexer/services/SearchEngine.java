@@ -1,5 +1,8 @@
 package si.kozelj.indexer.services;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import one.util.streamex.EntryStream;
 import one.util.streamex.StreamEx;
 import opennlp.tools.tokenize.SimpleTokenizer;
 import opennlp.tools.util.Span;
@@ -10,6 +13,7 @@ import si.kozelj.indexer.models.rest.ResultWrapper;
 import si.kozelj.indexer.repositories.PostingRepository;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 
 @Service
@@ -31,18 +35,62 @@ public class SearchEngine {
         List<Posting> targetPostings = postingRepository.findTopFiveMatchingDocuments(searchTerms);
         Map<String, List<Posting>> postingsByDocumentNames = StreamEx.of(targetPostings).groupingBy(Posting::getDocumentName);
 
+        // collect indexes from the postings
+        Map<String, Collection<Integer>> indexesByDocumentName = new HashMap<>();
+        for (String documentName : postingsByDocumentNames.keySet()) {
+            List<Integer> indexes = StreamEx.of(postingsByDocumentNames.get(documentName))
+                    .map(Posting::getIndexes)
+                    .map(o -> o.split(","))
+                    .flatMap(Arrays::stream)
+                    .map(Integer::valueOf)
+                    .sorted()
+                    .toList();
+
+            indexesByDocumentName.put(documentName, indexes);
+        }
 
         // load web content from selected documents
         Map<String, String> contentByDocumentName = fileImporter.getContent(postingsByDocumentNames.keySet());
 
+        return buildResult(indexesByDocumentName, contentByDocumentName);
+    }
+
+    public List<ResultWrapper> getQueryResultsSlowly(String query) throws IOException {
+        Set<String> searchTerms = StreamEx.split(query, " ").map(String::toLowerCase).toSet();
+        if (searchTerms.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // count indices for each path
+        List<Path> filePaths = fileImporter.getFilePaths();
+        Multimap<Path, Integer> indicesByPath = HashMultimap.create();
+        for (Path path : filePaths) {
+            String documentText = fileImporter.extractDocumentText(path);
+
+            String[] tokens = SimpleTokenizer.INSTANCE.tokenize(documentText);
+            for (int i = 0; i < tokens.length; i++) {
+                if (searchTerms.contains(tokens[i].toLowerCase())) {
+                    indicesByPath.put(path, i);
+                }
+            }
+        }
+
+        // keep the top 5 paths with most occurring indices
+        List<Path> targetPaths = EntryStream.of(indicesByPath.asMap()).mapValues(Collection::size).reverseSorted(Comparator.comparing(Map.Entry::getValue)).map(Map.Entry::getKey).limit(5).toList();
+
+        // build maps for result building; here we must respect the content of the "targetPaths"
+        Map<String, String> contentByDocumentName = fileImporter.getContent(StreamEx.of(targetPaths).map(fileImporter::getDocumentName).toList());
+        Map<String, Collection<Integer>> indexesByDocumentName = EntryStream.of(indicesByPath.asMap()).filterKeys(targetPaths::contains).mapKeys(fileImporter::getDocumentName).toMap();
+
+        return buildResult(indexesByDocumentName, contentByDocumentName);
+    }
+
+
+    private List<ResultWrapper> buildResult(Map<String, Collection<Integer>> indicesByDocumentName, Map<String, String> contentByDocumentName) {
         List<ResultWrapper> resultWrappers = new ArrayList<>();
-        for (String documentName : postingsByDocumentNames.keySet()) {
+        for (String documentName : indicesByDocumentName.keySet()) {
             // retrieve all indexes that index the word in the result of the tokenizer
-            List<Integer> indices = StreamEx.of(postingsByDocumentNames.get(documentName))
-                                            .map(Posting::getIndexes)
-                                            .map(o -> o.split(","))
-                                            .flatMap(Arrays::stream)
-                                            .map(Integer::valueOf)
+            List<Integer> indices = StreamEx.of(indicesByDocumentName.get(documentName))
                                             .sorted()
                                             .toList();
 
@@ -101,7 +149,6 @@ public class SearchEngine {
 
         return resultWrappers;
     }
-
 
     private class IndexSpan {
         private final Integer start;
