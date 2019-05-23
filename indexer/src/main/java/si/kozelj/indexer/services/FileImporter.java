@@ -12,6 +12,7 @@ import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import si.kozelj.indexer.models.IndexWord;
 import si.kozelj.indexer.models.Posting;
@@ -34,10 +35,10 @@ public class FileImporter {
     @Autowired
     private PostingRepository postingRepository;
 
-    // TODO make it configurable
-    private final String DATA_PATH = "D:/Libraries/Documents/Projects/webindexer/data";
-    private final PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:**.html");
+    @Value("${data.path}")
+    private String data;
 
+    private final PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:**.html");
     private final Logger logger = LoggerFactory.getLogger(FileImporter.class);
 
     public void importFiles() {
@@ -80,7 +81,7 @@ public class FileImporter {
     }
 
     public List<Path> getFilePaths() throws IOException {
-        Stream<Path> paths = Files.walk(Paths.get(DATA_PATH));
+        Stream<Path> paths = Files.walk(Paths.get(data));
         return StreamEx.of(paths).filter(pathMatcher::matches).toList();
     }
 

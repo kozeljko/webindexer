@@ -26,7 +26,7 @@ public class IndexerRestController {
     @GetMapping("/loadFiles")
     public String loadFiles() {
         fileImporter.importFiles();
-        return "loading";
+        return "loaded files";
     }
 
     @PostMapping("/search")
@@ -37,7 +37,7 @@ public class IndexerRestController {
             queryResults = searchEngine.getQueryResults(searchRequest.getQuery());
         } catch (IOException e) {
             e.printStackTrace();
-            return "";
+            return "ERROR while querying";
         }
 
         return formatResults(searchRequest.getQuery(), queryResults, System.currentTimeMillis() - startMs);
@@ -51,7 +51,7 @@ public class IndexerRestController {
             queryResults = searchEngine.getQueryResultsSlowly(searchRequest.getQuery());
         } catch (IOException e) {
             e.printStackTrace();
-            return "";
+            return "ERROR while querying";
         }
 
         return formatResults(searchRequest.getQuery(), queryResults, System.currentTimeMillis() - startMs);
