@@ -1,0 +1,10 @@
+Results for a query: "rekreacija"
+
+	Results found in 195ms
+
+	Frequencies Document                                  Snippet                                                                                        
+	----------- ----------------------------------------- -----------------------------------------------------------                                    
+	4           evem.gov.si/evem.gov.si.371.html          ... : · Ženska rekreacija, klasična skupinska ... strelišču) · Rekreacija na umetni plezalni ... , kot so rekreacija in zabava s ... socialnem okolju,
+	                                                       rekreacija in šport Pogoji ...                                                                                                                       
+	3           podatki.gov.si/podatki.gov.si.340.html    ... , zdravstvo in rekreacija, d. ... , zdravstvo, rekreacija, d. ... VITA CENTER, rekreacija, zdravstvene storitve ...                               
+	1           evem.gov.si/evem.gov.si.29.html           ... katere namen je rekreacija in socializacija, ...                                                                                                  

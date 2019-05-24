@@ -154,7 +154,7 @@ public class FileImporter {
     }
 
     // loads the stop words from the resources folder
-    private Set<String> getStopWords() throws IOException {
+    public Set<String> getStopWords() throws IOException {
         URL url = Resources.getResource("sl.txt");
         String text = Resources.toString(url, Charsets.UTF_8);
 

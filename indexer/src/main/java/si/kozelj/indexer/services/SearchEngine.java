@@ -63,13 +63,14 @@ public class SearchEngine {
 
         // count indices for each path
         List<Path> filePaths = fileImporter.getFilePaths();
+        Set<String> stopWords = fileImporter.getStopWords();
         Multimap<Path, Integer> indicesByPath = HashMultimap.create();
         for (Path path : filePaths) {
             String documentText = fileImporter.extractDocumentText(path);
 
             String[] tokens = SimpleTokenizer.INSTANCE.tokenize(documentText);
             for (int i = 0; i < tokens.length; i++) {
-                if (searchTerms.contains(tokens[i].toLowerCase())) {
+                if (searchTerms.contains(tokens[i].toLowerCase()) && !stopWords.contains(tokens[i].toLowerCase())) {
                     indicesByPath.put(path, i);
                 }
             }
@@ -134,7 +135,7 @@ public class SearchEngine {
             String documentSnippet = StreamEx.of(snippets).joining(" ... ");
 
             // if we don't display first word of text, prepend with dots
-            if (spanStack.peekLast().getStart() == 0) {
+            if (spanStack.peekLast().getStart() != 0) {
                 documentSnippet = "... " + documentSnippet;
             }
 
